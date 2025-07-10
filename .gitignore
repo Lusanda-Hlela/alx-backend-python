@@ -1,0 +1,9 @@
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore SQLite DB if not required
+*.db
+
+# Ignore virtual environment
+virt/
