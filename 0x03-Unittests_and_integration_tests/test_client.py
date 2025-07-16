@@ -5,12 +5,7 @@ import unittest
 from unittest.mock import patch, PropertyMock
 from parameterized import parameterized, parameterized_class
 from client import GithubOrgClient
-from fixtures import (
-    org_payload,
-    repos_payload,
-    expected_repos,
-    apache2_repos
-)
+from fixtures import org_payload, repos_payload, expected_repos, apache2_repos, TEST_PAYLOAD
 
 
 class TestGithubOrgClient(unittest.TestCase):
@@ -80,58 +75,47 @@ class TestGithubOrgClient(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-def load_integration_tests():
-    """Encapsulate parameterized_class usage to avoid checker import errors"""
-    from fixtures import (
-        org_payload,
-        repos_payload,
-        expected_repos,
-        apache2_repos,
-    )
+@parameterized_class([
+    {
+        "org_payload": org_payload,
+        "repos_payload": repos_payload,
+        "expected_repos": expected_repos,
+        "apache2_repos": apache2_repos,
+    }
+])
 
-    @parameterized_class([
-        {
-            "org_payload": org_payload,
-            "repos_payload": repos_payload,
-            "expected_repos": expected_repos,
-            "apache2_repos": apache2_repos,
-        }
-    ])
-    class TestIntegrationGithubOrgClient(unittest.TestCase):
-        """Integration tests with patched requests.get only"""
+@parameterized_class(TEST_PAYLOAD)
+class TestIntegrationGithubOrgClient(unittest.TestCase):
+    """Integration tests for GithubOrgClient.public_repos"""
 
-        @classmethod
-        def setUpClass(cls):
-            """Start patcher for requests.get and set .json side effects"""
-            cls.get_patcher = patch('requests.get')
-            cls.mock_get = cls.get_patcher.start()
+    @classmethod
+    def setUpClass(cls):
+        """Start patcher for requests.get and set .json side effects"""
+        cls.get_patcher = patch('requests.get')
+        cls.mock_get = cls.get_patcher.start()
 
-            cls.mock_get.side_effect = [
-                unittest.mock.Mock(json=lambda: cls.org_payload),
-                unittest.mock.Mock(json=lambda: cls.repos_payload),
-                unittest.mock.Mock(json=lambda: cls.org_payload),
-                unittest.mock.Mock(json=lambda: cls.repos_payload),
-            ]
+        # Provide enough .json() responses (2 calls per test x 2 tests = 4 total)
+        cls.mock_get.side_effect = [
+            unittest.mock.Mock(json=lambda: cls.org_payload),        # test_public_repos (org)
+            unittest.mock.Mock(json=lambda: cls.repos_payload),      # test_public_repos (repos)
+            unittest.mock.Mock(json=lambda: cls.org_payload),        # test_public_repos_with_license (org)
+            unittest.mock.Mock(json=lambda: cls.repos_payload),      # test_public_repos_with_license (repos)
+        ]
 
-        @classmethod
-        def tearDownClass(cls):
-            """Stop patcher after integration tests"""
-            cls.get_patcher.stop()
+    @classmethod
+    def tearDownClass(cls):
+        """Stop patcher after integration tests"""
+        cls.get_patcher.stop()
 
-        def test_public_repos(self):
-            """Test that public_repos returns expected repo list"""
-            client = GithubOrgClient("test-org")
-            self.assertEqual(client.public_repos(), self.expected_repos)
+    def test_public_repos(self):
+        """Test that public_repos returns expected repo list"""
+        client = GithubOrgClient("test-org")
+        self.assertEqual(client.public_repos(), self.expected_repos)
 
-        def test_public_repos_with_license(self):
-            """Test filtering repos by license"""
-            client = GithubOrgClient("test-org")
-            result = client.public_repos(license="apache-2.0")
-            self.assertEqual(result, self.apache2_repos)
-
-    globals()[
-        'TestIntegrationGithubOrgClient'
-        ] = TestIntegrationGithubOrgClient
-
-
-load_integration_tests()
+    def test_public_repos_with_license(self):
+        """Test filtering repos by license"""
+        client = GithubOrgClient("test-org")
+        self.assertEqual(
+            client.public_repos(license="apache-2.0"),
+            self.apache2_repos
+        )

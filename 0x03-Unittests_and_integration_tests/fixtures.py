@@ -14,9 +14,10 @@ repos_payload = [
 ]
 
 expected_repos = ["repo1", "repo2", "repo3"]
+
 apache2_repos = ["repo1", "repo3"]
 
-# For parameterized_class
+# Properly structured for parameterized_class
 TEST_PAYLOAD = [{
     "org_payload": org_payload,
     "repos_payload": repos_payload,
