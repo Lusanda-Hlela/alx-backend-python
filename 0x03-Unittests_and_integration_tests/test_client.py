@@ -5,7 +5,12 @@ import unittest
 from unittest.mock import patch, PropertyMock
 from parameterized import parameterized, parameterized_class
 from client import GithubOrgClient
-from fixtures import org_payload, repos_payload, expected_repos, apache2_repos, TEST_PAYLOAD
+from fixtures import (
+    org_payload,
+    repos_payload,
+    expected_repos,
+    apache2_repos
+)
 
 
 class TestGithubOrgClient(unittest.TestCase):
@@ -83,10 +88,8 @@ class TestGithubOrgClient(unittest.TestCase):
         "apache2_repos": apache2_repos,
     }
 ])
-
-@parameterized_class(TEST_PAYLOAD)
 class TestIntegrationGithubOrgClient(unittest.TestCase):
-    """Integration tests for GithubOrgClient.public_repos"""
+    """Integration tests with patched requests.get only"""
 
     @classmethod
     def setUpClass(cls):
@@ -94,12 +97,11 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         cls.get_patcher = patch('requests.get')
         cls.mock_get = cls.get_patcher.start()
 
-        # Provide enough .json() responses (2 calls per test x 2 tests = 4 total)
         cls.mock_get.side_effect = [
-            unittest.mock.Mock(json=lambda: cls.org_payload),        # test_public_repos (org)
-            unittest.mock.Mock(json=lambda: cls.repos_payload),      # test_public_repos (repos)
-            unittest.mock.Mock(json=lambda: cls.org_payload),        # test_public_repos_with_license (org)
-            unittest.mock.Mock(json=lambda: cls.repos_payload),      # test_public_repos_with_license (repos)
+            unittest.mock.Mock(json=lambda: cls.org_payload),
+            unittest.mock.Mock(json=lambda: cls.repos_payload),
+            unittest.mock.Mock(json=lambda: cls.org_payload),
+            unittest.mock.Mock(json=lambda: cls.repos_payload),
         ]
 
     @classmethod
@@ -115,7 +117,5 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
     def test_public_repos_with_license(self):
         """Test filtering repos by license"""
         client = GithubOrgClient("test-org")
-        self.assertEqual(
-            client.public_repos(license="apache-2.0"),
-            self.apache2_repos
-        )
+        result = client.public_repos(license="apache-2.0")
+        self.assertEqual(result, self.apache2_repos)
