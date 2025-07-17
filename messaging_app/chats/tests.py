@@ -7,20 +7,22 @@ class ChatTests(APITestCase):
         self.user1 = User.objects.create_user(username="test1", email="test1@test.com", password="123")
         self.user2 = User.objects.create_user(username="test2", email="test2@test.com", password="123")
 
+        self.conversation = Conversation.objects.create()
+        self.conversation.participants.set([self.user1, self.user2])
+
     def test_create_conversation(self):
         url = reverse('conversation-list')
-        res = self.client.post(url, {'participants': [str(self.user1.user_id), str(self.user2.user_id)]}, format='json')
+        res = self.client.post(url, {
+            'participants': [str(self.user1.user_id), str(self.user2.user_id)]
+        }, format='json')
         self.assertEqual(res.status_code, 201)
         self.assertIn('conversation_id', res.data)
 
     def test_send_message(self):
-        from .models import Conversation
-        c = Conversation.objects.create()
-        c.participants.set([self.user1, self.user2])
-        url = reverse('message-list')
+        url = reverse('conversation-messages-list', args=[self.conversation.conversation_id])
         res = self.client.post(url, {
             'sender': str(self.user1.user_id),
-            'conversation': str(c.conversation_id),
+            'conversation': str(self.conversation.conversation_id),
             'message_body': 'Hello there!'
         }, format='json')
         self.assertEqual(res.status_code, 201)
