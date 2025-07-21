@@ -7,6 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Conversation, Message, User
 from .serializers import ConversationSerializer, MessageSerializer
 from rest_framework.permissions import IsAuthenticated
+from .permissions import IsParticipantOfConversation
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
@@ -37,7 +38,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]  # <- allows all requests
     filter_backends = [filters.SearchFilter]
     search_fields = ['conversation__id', 'sender__username']
-    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
 
     def create(self, request, *args, **kwargs):
         conversation_id = request.data.get('conversation')
