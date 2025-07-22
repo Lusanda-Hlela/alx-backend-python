@@ -7,7 +7,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Conversation, Message, User
 from .serializers import ConversationSerializer, MessageSerializer
 from .permissions import IsParticipantOfConversation
-from rest_framework import status
+from .filters import MessageFilter
+from .pagination import StandardResultsSetPagination
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
@@ -38,11 +39,12 @@ class ConversationViewSet(viewsets.ModelViewSet):
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated, IsParticipantOfConversation]
-    filter_backends = [filters.SearchFilter]
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = MessageFilter
     search_fields = ['conversation__id', 'sender__username']
 
     def get_queryset(self):
-        # Only return messages from conversations the user is part of
         return Message.objects.filter(conversation__participants=self.request.user)
 
     def create(self, request, *args, **kwargs):
