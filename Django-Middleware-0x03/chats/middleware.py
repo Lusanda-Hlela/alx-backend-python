@@ -3,7 +3,8 @@
 import time
 from collections import defaultdict
 from datetime import datetime
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
+
 
 class RequestLoggingMiddleware:
     def __init__(self, get_response):
@@ -63,19 +64,20 @@ class OffensiveLanguageMiddleware:
             ip = request.META.get('REMOTE_ADDR')
         return ip
 
-class RolePermissionMiddleware:
+
+class RolepermissionMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Example: Restrict actions on chat APIs
-        if request.path.startswith('/api/chats/') and request.method in ['POST', 'DELETE', 'PUT']:
-            if not request.user.is_authenticated:
-                return HttpResponseForbidden("Authentication required.")
+        user = request.user
 
-            # Allow only admin or moderator
-            user_role = getattr(request.user, 'role', None)
-            if user_role not in ['admin', 'moderator']:
-                return HttpResponseForbidden("Access denied. Only admins or moderators allowed.")
+        # Allow unauthenticated requests to proceed
+        if not user.is_authenticated:
+            return self.get_response(request)
+
+        # Only allow users with 'admin' or 'moderator' roles
+        if hasattr(user, 'role') and user.role not in ['admin', 'moderator']:
+            return JsonResponse({'error': 'Permission denied: insufficient role'}, status=403)
 
         return self.get_response(request)
