@@ -67,6 +67,7 @@ MIDDLEWARE = [
     'chats.middleware.RequestLoggingMiddleware',
     'chats.middleware.RestrictAccessByTimeMiddleware',
     'chats.middleware.OffensiveLanguageMiddleware',
+    'chats.middleware.RolePermissionMiddleware',
 ]
 
 ROOT_URLCONF = 'DjangoMiddleware03.urls'

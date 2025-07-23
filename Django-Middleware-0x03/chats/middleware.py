@@ -62,3 +62,20 @@ class OffensiveLanguageMiddleware:
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+
+class RolePermissionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Example: Restrict actions on chat APIs
+        if request.path.startswith('/api/chats/') and request.method in ['POST', 'DELETE', 'PUT']:
+            if not request.user.is_authenticated:
+                return HttpResponseForbidden("Authentication required.")
+
+            # Allow only admin or moderator
+            user_role = getattr(request.user, 'role', None)
+            if user_role not in ['admin', 'moderator']:
+                return HttpResponseForbidden("Access denied. Only admins or moderators allowed.")
+
+        return self.get_response(request)

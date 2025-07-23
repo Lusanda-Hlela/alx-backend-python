@@ -4,12 +4,19 @@ from django.db import models
 
 
 class User(AbstractUser):
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('moderator', 'Moderator'),
+        ('user', 'User'),
+    ]
+
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')  # 👈 New field added
 
     REQUIRED_FIELDS = ['email', 'first_name', 'last_name', 'phone_number', 'password']
-    USERNAME_FIELD = 'username'  # keep default or change if needed
+    USERNAME_FIELD = 'username'
 
     def __str__(self):
         return self.username
