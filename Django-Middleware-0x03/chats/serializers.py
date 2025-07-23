@@ -3,9 +3,9 @@ from .models import User, Conversation, Message
 
 
 class UserSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField()  # 👈 Using SerializerMethodField
+    full_name = serializers.SerializerMethodField()
 
-    email = serializers.CharField()  # 👈 Using CharField explicitly
+    email = serializers.CharField()
 
     class Meta:
         model = User
@@ -17,7 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
-    message_body = serializers.CharField()  # 👈 Using CharField explicitly
+    message_body = serializers.CharField()
 
     class Meta:
         model = Message
@@ -34,5 +34,5 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if not data.get('participants') and self.instance is None:
-            raise serializers.ValidationError("Conversation must include at least one participant.")  # 👈 Using ValidationError
+            raise serializers.ValidationError("Conversation must include at least one participant.")
         return data
