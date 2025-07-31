@@ -13,17 +13,15 @@ class Message(models.Model):
     def __str__(self):
         return f"{self.sender.username} -> {self.receiver.username}: {self.content[:30]}"
     
-    
     def get_thread(self):
-    """ Recursively fetch all replies in threaded format """
-    thread = []
+        """ Recursively fetch all replies in threaded format """
+        thread = []
 
-    def recurse(message):
-        replies = message.replies.all().order_by('timestamp')
-        for reply in replies:
-            thread.append(reply)
-            recurse(reply)
+        def recurse(message):
+            replies = message.replies.all().order_by('timestamp')
+            for reply in replies:
+                thread.append(reply)
+                recurse(reply)
 
-    recurse(self)
-    return thread
-
+        recurse(self)
+        return thread
