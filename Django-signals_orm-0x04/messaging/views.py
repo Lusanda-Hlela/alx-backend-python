@@ -5,6 +5,8 @@ from django.shortcuts import redirect
 from django.contrib.auth.models import User
 from .models import Message
 from django.db.models import Prefetch
+from django.views.decorators.cache import cache_page
+
 
 @login_required
 def delete_user(request):
@@ -34,3 +36,8 @@ def unread_messages_view(request):
     return render(
         request, "messaging/unread_messages.html", {"unread_messages": unread_msgs}
     )
+
+@cache_page(60)  # Cache for 60 seconds
+def conversation_view(request, user_id):
+    messages = Message.objects.filter(sender_id=user_id)
+    return render(request, 'messaging/conversation.html', {'messages': messages})
