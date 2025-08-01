@@ -24,3 +24,11 @@ def threaded_messages_view(request):
 
     context = {"messages": messages}
     return render(request, "messaging/threaded_messages.html", context)
+
+
+@login_required
+def unread_messages_view(request):
+    unread_msgs = Message.unread.for_user(request.user)
+
+    context = {"unread_messages": unread_msgs}
+    return render(request, "messaging/unread_messages.html", context)
