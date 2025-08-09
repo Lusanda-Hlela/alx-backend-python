@@ -5,8 +5,12 @@ services:
     image: mysql:8.0
     container_name: messaging_db
     restart: always
-    env_file:
-      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: Man8244251
+      MYSQL_USER: root
+      MYSQL_PASSWORD: Man8244251
+      MYSQL_DATABASE: messaging_db
+
     ports:
       - "3307:3306" # Avoid conflicts with local MySQL
     volumes:
@@ -17,14 +21,14 @@ services:
     container_name: messaging_web
     restart: always
     command: >
-      sh -c "python manage.py migrate &&
-            python manage.py runserver 0.0.0.0 -p 8000"
+      sh -c "python3 manage.py migrate &&
+            python3 manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
     ports:
       - "8000:8000"
-    env_file:
-      - .env
+    environment:
+      - DEBUG=1
     depends_on:
       - db
 
