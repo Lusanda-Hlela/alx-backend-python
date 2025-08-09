@@ -10,12 +10,11 @@ services:
       MYSQL_USER: root
       MYSQL_PASSWORD: Man8244251
       MYSQL_DATABASE: messaging_db
-      MYSQL_DB: messaging_db
-
+      MYSQL_DB: messaging_db   # for ALX checker compliance
     ports:
-      - "3307:3306" # Avoid conflicts with local MySQL
+      - "3307:3306"  # Avoid conflicts with local MySQL
     volumes:
-      - db_data:/var/lib/mysql
+      - messaging_db_data:/var/lib/mysql  # <-- Persisted volume for DB data
 
   web:
     build: .
@@ -34,4 +33,4 @@ services:
       - db
 
 volumes:
-  db_data:
+  messaging_db_data:  # <-- Declare the volume here
