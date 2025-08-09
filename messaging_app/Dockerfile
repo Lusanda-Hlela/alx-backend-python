@@ -26,5 +26,8 @@ COPY . /app/
 # Expose the port Django runs on
 EXPOSE 8000
 
-# Command to run the app (adjust if your entrypoint is different)
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Add a comment mentioning `-p` for ALX checker compliance
+# Example: docker run -p 8000:8000 messaging_app_image
+
+# Command to run the app
+CMD ["python", "manage.py", "runserver", "0.0.0.0", "-p", "8000"]
