@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# messaging_app/messaging_app/kurbeScript
+# Purpose: ensure minikube & kubectl present (try choco), start a local cluster (docker driver preferred),
+# verify cluster with `kubectl cluster-info` and list available pods.
+set -euo pipefail
+
+# Always run from this script's directory
+cd "$(dirname "$0")"
+
+info() { printf "\n[INFO] %s\n" "$*"; }
+warn() { printf "\n[WARN] %s\n" "$*"; }
+err()  { printf "\n[ERROR] %s\n" "$*" >&2; }
+
+# detect (roughly) if running on Windows msys/git-bash
+UNAME="$(uname -s 2>/dev/null || echo unknown)"
+IS_WIN=false
+if echo "$UNAME" | grep -qiE 'mingw|msys|cygwin|nt'; then IS_WIN=true; fi
+
+has_cmd() { command -v "$1" >/dev/null 2>&1; }
+
+# Try to run choco via cmd.exe if on Windows and choco appears to be a windows program
+run_choco() {
+  if $IS_WIN; then
+    cmd.exe /C "choco $*"
+  else
+    choco "$@"
+  fi
+}
+
+# Ensure minikube
+if ! has_cmd minikube; then
+  warn "minikube not found in PATH."
+  if has_cmd choco || ($IS_WIN && cmd.exe /C "choco -v" >/dev/null 2>&1); then
+    info "Attempting to install minikube via Chocolatey (may require admin/PowerShell)."
+    if $IS_WIN; then
+      cmd.exe /C "choco install minikube -y" || { err "choco install minikube failed. Please install minikube manually (see https://minikube.sigs.k8s.io/docs/start/)"; exit 1; }
+    else
+      choco install minikube -y || { err "choco install minikube failed"; exit 1; }
+    fi
+    info "minikube installed (or attempted). You might need to restart your shell for PATH changes."
+  else
+    err "minikube not installed and Chocolatey not found. Please install minikube manually: https://minikube.sigs.k8s.io/docs/start/"
+    exit 1
+  fi
+else
+  info "minikube found: $(minikube version --short 2>/dev/null || true)"
+fi
+
+# Ensure kubectl
+if ! has_cmd kubectl; then
+  warn "kubectl not found in PATH."
+  if has_cmd choco || ($IS_WIN && cmd.exe /C "choco -v" >/dev/null 2>&1); then
+    info "Attempting to install kubectl (kubernetes-cli) via Chocolatey (may require admin/PowerShell)."
+    if $IS_WIN; then
+      cmd.exe /C "choco install kubernetes-cli -y" || { err "choco install kubernetes-cli failed. Please install kubectl manually (see https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/)"; exit 1; }
+    else
+      choco install kubernetes-cli -y || { err "choco install kubernetes-cli failed"; exit 1; }
+    fi
+    info "kubectl installed (or attempted). You might need to restart your shell for PATH changes."
+  else
+    err "kubectl not installed and Chocolatey not found. Please install kubectl manually: https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/"
+    exit 1
+  fi
+else
+  info "kubectl found: $(kubectl version --client --short 2>/dev/null || true)"
+fi
+
+# Prefer Docker driver if docker is available
+DRIVER=""
+if has_cmd docker; then
+  DRIVER="docker"
+  info "Docker detected -> using driver: docker"
+else
+  warn "Docker not found. On Windows it's easiest to use Docker Desktop or Hyper-V/VirtualBox as a driver."
+  warn "If you have VirtualBox or Hyper-V, re-run this script after installing/configuring them."
+  err "Install Docker Desktop (recommended) or set up a supported VM driver, then re-run."
+  exit 1
+fi
+
+# Start minikube
+info "Starting minikube (driver=${DRIVER}) — this can take a couple of minutes the first time."
+minikube start --driver="${DRIVER}" --memory=4096 --cpus=2 || { err "minikube start failed. Check 'minikube logs' and ensure Docker/driver is running."; exit 1; }
+
+# Wait until node is Ready (timeout 5 minutes)
+info "Waiting up to 5 minutes for node to become Ready..."
+MAX_WAIT=300
+SLEEP=5
+elapsed=0
+while :; do
+  if kubectl get nodes --no-headers 2>/dev/null | awk '{print $2}' | grep -q 'Ready'; then
+    info "Kubernetes node is Ready."
+    break
+  fi
+  if [ "$elapsed" -ge "$MAX_WAIT" ]; then
+    warn "Timeout waiting for node Ready. You can inspect status with: minikube status && kubectl get nodes -o wide"
+    break
+  fi
+  sleep "$SLEEP"
+  elapsed=$((elapsed + SLEEP))
+done
+
+# Verify cluster
+info "kubectl cluster-info output:"
+kubectl cluster-info || warn "kubectl cluster-info returned error (cluster may not be fully ready)."
+
+# List pods (all namespaces)
+info "Listing pods in all namespaces (this may be empty initially):"
+kubectl get pods --all-namespaces || warn "kubectl get pods failed or there are no pods."
+
+info "Done. If you see node 'Ready' and cluster-info responds, your local Kubernetes cluster is running."
