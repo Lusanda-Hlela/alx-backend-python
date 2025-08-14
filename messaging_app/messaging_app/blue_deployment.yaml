@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: messaging-app-blue
+  labels:
+    app: messaging-app
+    version: blue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: messaging-app
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: messaging-app
+        version: blue
+    spec:
+      containers:
+        - name: messaging-app
+          image: lusanda01/messaging-app:blue   # <-- Keep old tag for blue version
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DJANGO_SETTINGS_MODULE
+              value: messaging_app.settings
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: messaging-app-service
+  labels:
+    app: messaging-app
+spec:
+  type: ClusterIP
+  selector:
+    app: messaging-app
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
