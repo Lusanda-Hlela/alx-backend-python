@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Scale the Django app deployment to 3 replicas
+echo "Scaling messaging-app-deployment to 3 replicas..."
+kubectl scale deployment messaging-app-deployment --replicas=3
+
+# Wait for pods to be ready
+echo "Waiting for pods to be ready..."
+kubectl rollout status deployment/messaging-app-deployment
+
+# Show running pods
+echo "Current pods:"
+kubectl get pods -o wide
+
+# Run load test using wrk (assuming app is port-forwarded or exposed)
+# Adjust URL to your accessible endpoint
+echo "Running load test with wrk..."
+wrk -t4 -c100 -d30s http://localhost:8000/
+
+# Monitor resource usage
+echo "Resource usage:"
+kubectl top pods
