@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         VENV_DIR = "venv"
+        DOCKER_IMAGE = "lusanda01/messaging_app:latest"
+        DOCKER_CREDENTIALS = "github-alx"  // Jenkins credential ID
     }
 
     stages {
@@ -36,10 +38,31 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                sh '''
+                    docker build -t $DOCKER_IMAGE messaging_app/
+                '''
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                echo 'Pushing Docker image to Docker Hub...'
+                withCredentials([usernamePassword(credentialsId: "$DOCKER_CREDENTIALS",                                              usernameVariable: "DOCKER_USER", passwordVariable: "DOCKER_PASS")]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push $DOCKER_IMAGE
+                    '''
+                }
+            }
+        }
+
         stage('Deploy') {
             steps {
                 echo 'Deploying...'
-                // add your deploy steps here
+                // Add your deployment steps here
             }
         }
     }
@@ -51,6 +74,7 @@ pipeline {
         }
     }
 }
+
 
 // ["credentialsId", "git branch"]
 // ["pip3 install"]
