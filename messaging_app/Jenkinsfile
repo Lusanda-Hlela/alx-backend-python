@@ -1,0 +1,63 @@
+pipeline {
+  agent any
+  options { timestamps(); ansiColor('xterm') }
+  environment {
+    APP_DIR = "messaging_app"
+    VENV    = "${WORKSPACE}/messaging_app/.venv"
+  }
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+    stage('Set up Python venv') {
+      steps {
+        dir("${APP_DIR}") {
+          sh '''
+            set -e
+            python3 --version
+            rm -rf "$VENV"
+            python3 -m venv "$VENV"
+            . "$VENV/bin/activate"
+            python -m pip install --upgrade pip
+          '''
+        }
+      }
+    }
+    stage('Install dependencies') {
+      steps {
+        dir("${APP_DIR}") {
+          sh '''
+            set -e
+            . "$VENV/bin/activate"
+            if [ -f requirements.txt ]; then
+              pip install -r requirements.txt
+            fi
+            pip install pytest pytest-html
+          '''
+        }
+      }
+    }
+    stage('Run tests') {
+      steps {
+        dir("${APP_DIR}") {
+          sh '''
+            set -e
+            . "$VENV/bin/activate"
+            mkdir -p reports
+            pytest -q --maxfail=1 --disable-warnings \
+              --junitxml=reports/junit.xml \
+              --html=reports/report.html --self-contained-html
+          '''
+        }
+      }
+    }
+  }
+  post {
+    always {
+      dir("${APP_DIR}") {
+        junit 'reports/junit.xml'
+        archiveArtifacts artifacts: 'reports/**', fingerprint: true
+      }
+    }
+  }
+}
