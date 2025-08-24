@@ -1,50 +1,53 @@
 pipeline {
     agent any
 
-    options {
-        timestamps()
-    }
-
     environment {
-        GIT_CREDENTIALS = 'github-alx'
+        VENV_DIR = "venv"
     }
 
     stages {
+
         stage('Checkout') {
             steps {
-                echo "Checking out code from Git..."
-                git branch: 'main',
-                    credentialsId: "${GIT_CREDENTIALS}",
-                    url: 'https://github.com/Lusanda-Hlela/alx-backend-python.git'
+                echo 'Checking out code from Git...'
+                checkout scm
             }
         }
 
         stage('Build & Install Dependencies') {
             steps {
-                echo "Setting up virtual environment and installing dependencies..."
+                echo 'Setting up virtual environment and installing dependencies...'
                 sh '''
-                    python3 -m venv venv
-                    bash -c "source venv/bin/activate && pip install --upgrade pip && pip install -r messaging_app/requirements.txt"
+                    python3 -m venv $VENV_DIR
+                    . $VENV_DIR/bin/activate
+                    pip install --upgrade pip
+                    pip install -r messaging_app/requirements.txt
                 '''
             }
         }
 
         stage('Test') {
             steps {
-                echo "Running tests..."
+                echo 'Running tests...'
                 sh '''
-                    bash -c "source venv/bin/activate && pytest messaging_app/"
+                    . $VENV_DIR/bin/activate
+                    pytest messaging_app/ --maxfail=1 --disable-warnings -q
                 '''
             }
         }
 
         stage('Deploy') {
             steps {
-                echo "Deploying..."
-                // Add your deploy steps here
+                echo 'Deploying...'
+                // add your deploy steps here
             }
         }
     }
-}
 
-// ["pip3 install"]
+    post {
+        always {
+            echo 'Cleaning up workspace...'
+            deleteDir()
+        }
+    }
+}
