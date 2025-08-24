@@ -51,3 +51,6 @@ pipeline {
         }
     }
 }
+
+// ["credentialsId", "git branch"]
+// ["pip3 install"]
