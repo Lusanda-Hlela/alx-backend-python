@@ -6,41 +6,46 @@ pipeline {
     }
 
     environment {
-        // Replace with your actual Jenkins credentials ID
         GIT_CREDENTIALS = 'github-alx'
-        VENV_DIR = 'venv'
     }
 
     stages {
         stage('Checkout') {
             steps {
                 echo "Checking out code from Git..."
-                // ["credentialsId", "git branch"]
                 git branch: 'main',
                     credentialsId: "${GIT_CREDENTIALS}",
                     url: 'https://github.com/Lusanda-Hlela/alx-backend-python.git'
             }
         }
 
-        stage('Build') {
+        stage('Set Up Virtual Environment') {
             steps {
-                echo "Creating virtual environment and installing dependencies..."
-                // ["messaging_app/requirements.txt", "pip3 install"]
+                echo "Setting up Python virtual environment..."
                 sh '''
-                python3 -m venv $VENV_DIR
-                . $VENV_DIR/bin/activate
-                pip install --upgrade pip
-                pip install -r messaging_app/requirements.txt
+                    python3 -m venv venv
+                    source venv/bin/activate
+                    pip install --upgrade pip
+                '''
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                echo "Installing dependencies..."
+                sh '''
+                    source venv/bin/activate
+                    pip install -r messaging_app/requirements.txt
                 '''
             }
         }
 
         stage('Test') {
             steps {
-                echo "Running tests inside virtual environment..."
+                echo "Running tests..."
                 sh '''
-                . $VENV_DIR/bin/activate
-                pytest messaging_app/
+                    source venv/bin/activate
+                    pytest messaging_app/
                 '''
             }
         }
