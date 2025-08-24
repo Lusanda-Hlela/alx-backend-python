@@ -5,22 +5,41 @@ pipeline {
         timestamps()
     }
 
+    environment {
+        // Replace with your actual Jenkins credentials ID
+        GIT_CREDENTIALS = 'github-alx'
+    }
+
     stages {
+        stage('Checkout') {
+            steps {
+                echo "Checking out code from Git..."
+                // ["credentialsId", "git branch"]
+                git branch: 'main',
+                    credentialsId: "${GIT_CREDENTIALS}",
+                    url: 'https://github.com/Lusanda-Hlela/alx-backend-python.git'
+            }
+        }
+
         stage('Build') {
             steps {
-                echo "Building..."
+                echo "Installing dependencies..."
+                // ["messaging_app/requirements.txt", "pip3 install"]
+                sh 'pip3 install -r messaging_app/requirements.txt'
             }
         }
 
         stage('Test') {
             steps {
                 echo "Running tests..."
+                sh 'pytest messaging_app/'
             }
         }
 
         stage('Deploy') {
             steps {
                 echo "Deploying..."
+                // Add your deploy steps here
             }
         }
     }
