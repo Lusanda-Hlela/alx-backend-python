@@ -23,23 +23,31 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo "Installing dependencies..."
+                echo "Creating virtual environment and installing dependencies..."
                 // ["messaging_app/requirements.txt", "pip3 install"]
-                sh 'pip3 install -r messaging_app/requirements.txt'
+                sh '''
+                python3 -m venv venv
+                source venv/bin/activate
+                pip install --upgrade pip
+                pip install -r messaging_app/requirements.txt
+                '''
             }
         }
 
         stage('Test') {
             steps {
-                echo "Running tests..."
-                sh 'pytest messaging_app/'
+                echo "Running tests inside virtual environment..."
+                sh '''
+                source venv/bin/activate
+                pytest messaging_app/
+                '''
             }
         }
 
         stage('Deploy') {
             steps {
                 echo "Deploying..."
-                // Add your deploy steps here
+                // Add deployment steps here
             }
         }
     }
